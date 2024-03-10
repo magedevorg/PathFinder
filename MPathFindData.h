@@ -1,48 +1,67 @@
+#pragma once
+
 #include "MPrerequisites.h"
 #include "MType.h"
+#include "MVector.h"
 
 
-
-// Á¤º¸ÀÇ ±¸¼º
-// Å¸ÀÏ - Àå¾Ö¹° ¿©ºÎ Á¤º¸¸¦ °¡Áö´Â °¡Àå ÀÛÀº´ÜÀ§
-// ±×¸®µå - Å¸ÀÏÁ¤º¸ÀÇ ¸ğÀ½. ¿©·¯°³ÀÇ ±×¸®µå¸¦ °¡Áö°í Æ¯Á¤ Áö¿ªÀ¸·Î ÀÌµ¿½Ã ÇØ´ç Áö¿ªÀÇ ±×¸®µå¸¸ ·ÎµåÇØ¼­ »ç¿ë.
-
-
-// Å¸ÀÏ Á¤º¸
-struct MTileData
+class MTileData
 {
 public:
-	// À§Ä¡ Á¤º¸
+	// ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½
 	MIntPoint TileIndex2D;
 
-	// Àå¾Ö¹° ¿©ºÎ
+	// ï¿½ï¿½Ö¹ï¿½ ï¿½ï¿½ï¿½ï¿½
 	bool IsObstacle = false;
 };
 
 
 
-
-// ±×¸®µå Á¤º¸
 class MGridData
 {
 public:
-	//  ÀÎµ¦½º Á¤º¸
+	// ì¸ë±ìŠ¤
 	MIntPoint GridIndex2D;
 
-	// Å¸ÀÏ Á¤º¸ ÄÁÅ×ÀÌ³Ê
+	// ìœ„ì¹˜ ì •ë³´
+	MVector2 LeftTop;
+	MVector2 RightBottom;
+
 	std::vector<MTileData> TileDataContainer;
 };
 
 
 
-struct MPathFindMetaData
+class MPathFindMetaData
 {
-	// ¸Ê »çÀÌÁî(ÃÑ »çÀÌÁî)
+public:
+	// ì‹œì‘ ìœ„ì¹˜
+	MVector2 StartPos;
+
+	// ë§µ ì‚¬ì´ì¦ˆ
 	MIntPoint MapSize;
 
-	// ±×¸®µå »çÀÌÁî
-	MINT32 GridSize = 100;
+	//--------------------------------------------------------
+	// ê·¸ë¦¬ë“œ ì •ë³´
+	//--------------------------------------------------------
+	MINT32 GridSize;		// ê·¸ë¦¬ë“œ ì‚¬ì´ì¦ˆ
+	MIntSize GridCount;		// ê·¸ë¦¬ë“œ ì¹´ìš´íŠ¸
 
-	// Å¸ÀÏ »çÀÌÁî(cm)
-	MINT32 TileSize = 100;
+	//--------------------------------------------------------
+	// íƒ€ì¼ ì •ë³´
+	//--------------------------------------------------------
+	MINT32 TileSize;		// íƒ€ì¼ ì‚¬ì´ì¦ˆ
+	MINT32 LineTileCount;	// í•œë¼ì¸ì˜ íƒ€ì¼ ê°œìˆ˜
+
+};
+
+
+class MPathFindData
+{
+public:
+	// ë©”íƒ€ ë°ì´í„°
+	MPathFindMetaData MetaData;
+
+	// ì»¨í…Œì´ë„ˆ
+	std::vector<MGridData> GridDataContainer;
 };
