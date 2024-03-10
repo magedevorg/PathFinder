@@ -35,8 +35,8 @@ public:
 class MPathFindMetaData
 {
 public:
-	// 시작 위치
-	MVector2 StartPos;
+	// 왼쪽 상단 위치(시작위치)
+	MVector2 LeftTopPos;
 
 	// 맵 사이즈
 	MIntPoint MapSize;
