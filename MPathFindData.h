@@ -5,30 +5,7 @@
 #include "MVector.h"
 
 
-class MTileData
-{
-public:
-	// ��ġ ����
-	MIntPoint TileIndex2D;
-
-	// ��ֹ� ����
-	bool IsObstacle = false;
-};
-
-
-
-class MGridData
-{
-public:
-	// 인덱스
-	MIntPoint GridIndex2D;
-
-	// 위치 정보
-	MVector2 LeftTop;
-	MVector2 RightBottom;
-
-	std::vector<MTileData> TileDataContainer;
-};
+#include "MGridDataManager.h"
 
 
 
