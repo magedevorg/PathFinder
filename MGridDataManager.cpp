@@ -1,5 +1,7 @@
 #include "MGridDataManager.h"
 #include "MFileUtil.h"
+#include "MTransform.h"
+#include "MCollision.h"
 
 
 #define GRID_META_FILE_NAME			MSTR("GridMetaData.dat")
@@ -137,6 +139,9 @@ void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT3
 			// 대상이 없는경우 파일에서 불러온다
 			MString fileName = GetGridDataFilePath(index2);
 
+			// 이부분 벡터를 덮어 씌우기 때문에 위험한 코드 
+			// 우선 그냥 처리해분다
+			/* 
 			// 대상 파일을 로드해보고 존재한다면 그거사용
 			if ( MTRUE == MFileUtil::LoadFile(readMemory, fileName) )
 			{
@@ -147,6 +152,7 @@ void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT3
 				LoadedGridDataContainer.push_back(gridData);
 				continue;
 			}
+			*/
 
 
 			if (MTRUE == IsCreateGridDataFile)
@@ -159,6 +165,18 @@ void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT3
 				MINT32 GridSideSize = GridMetaData.GetGridSideSize();
 				gridData->LeftTop.X = GridSideSize * index2.X;
 				gridData->LeftTop.Y = GridSideSize * index2.Y;
+
+				gridData->TileDataContainer.clear();
+				gridData->TileDataContainer.resize(GridMetaData.GridSideTileCount * GridMetaData.GridSideTileCount);
+				for (int32 ty = 0; ty < GridMetaData.GridSideTileCount; ++ty)
+				{
+					for (int32 tx = 0; tx < GridMetaData.GridSideTileCount; ++tx)
+					{
+						int32 idx = ty * GridMetaData.GridSideTileCount + tx;
+						gridData->TileDataContainer[idx].TileIndex2D.Set(tx, ty);
+						gridData->TileDataContainer[idx].IsObstacle = false;
+					}
+				}
 
 				LoadedGridDataContainer.push_back(gridData);
 
@@ -223,6 +241,38 @@ MBOOL MGridDataEditManager::ResetMetaData(const MGridMetaData& inMetaData)
 	return MTRUE;
 }
 
+
+void MGridDataEditManager::UpdateLoadedGridData(std::vector<class MBoxCollider*>& inColliderList)
+{
+	// 그리드 데이터 루프
+	for (MGridData* gridData : LoadedGridDataContainer)
+	{
+		if (nullptr == gridData) {
+			continue;
+		}
+
+		for (MTileData& tileData : gridData->TileDataContainer)
+		{
+			tileData.IsObstacle = false;
+
+			MTransform tileTransform;
+			tileTransform.Position = GetTileCenterPosition(gridData, &tileData);
+			
+			MBoxCollider tileBoxCollider(tileTransform, MVector3(GridMetaData.TileSize, GridMetaData.TileSize, 100));
+
+			for (MBoxCollider* collider : inColliderList)
+			{
+				// 충돌하는 박스
+				if (true == MCollision::CheckOBB(tileBoxCollider, *collider))
+				{
+					tileData.IsObstacle = true;
+					break;
+				}
+			}	
+		}
+	}
+}
+
 void MGridDataEditManager::SaveMetaData()
 {
 	MString metaFilePath = GetMetaFilePath();
@@ -235,3 +285,10 @@ void MGridDataEditManager::SaveGridData()
 
 }
 
+MVector3 MGridDataEditManager::GetTileCenterPosition(MGridData* inGridData, MTileData* inTileData)
+{
+	return MVector3(
+		inGridData->LeftTop.X + (inTileData->TileIndex2D.X * GridMetaData.TileSize) + (GridMetaData.TileSize * 0.5f),
+		inGridData->LeftTop.Y + (inTileData->TileIndex2D.Y * GridMetaData.TileSize) + (GridMetaData.TileSize * 0.5f),
+		0);
+}

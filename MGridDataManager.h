@@ -60,6 +60,7 @@ public:
 	MVector2 RightBottom;
 
 	std::vector<MTileData> TileDataContainer;
+
 };
 
 
@@ -155,6 +156,10 @@ public:
 	// 메타 데이터 재설정
 	MBOOL ResetMetaData(const MGridMetaData& inMetaData);
 
+	// 현재 로드된 그리드데이터를 갱신
+	void UpdateLoadedGridData(std::vector<class MBoxCollider*>& inColliderList);
+
+
 
 	//------------------------------------------------------
 	// 저장 처리
@@ -164,4 +169,9 @@ public:
 
 	// 그리드 데이터 저장
 	void SaveGridData();
+
+
+protected:
+	// 타일의 중심 위치를 얻는다
+	MVector3 GetTileCenterPosition(MGridData* inGridData, MTileData* inTileData);
 };
