@@ -56,7 +56,7 @@ MBOOL MGridDataManager::LoadMetaData()
 }
 
 
-MBOOL MGridDataManager::LoadGridData(const MVector2& inCenterPos, const MINT32 inExtend)
+MBOOL MGridDataManager::LoadGridDataByPosition(const MVector2& inCenterPos, const MINT32 inExtend)
 {
 	MINT32 gridSideSize = GridMetaData.GetGridSideSize();
 
@@ -76,11 +76,11 @@ MBOOL MGridDataManager::LoadGridData(const MVector2& inCenterPos, const MINT32 i
 	const int32 indexX = ConvertIndexFunc(inCenterPos.X);
 	const int32 indexY = ConvertIndexFunc(inCenterPos.Y);
 	
-	return LoadGridData(MIntPoint(indexX, indexY), inExtend);
+	return LoadGridDataByIndex(MIntPoint(indexX, indexY), inExtend);
 }
 
 
-MBOOL MGridDataManager::LoadGridData(const MIntPoint& inCenterIndex, const MINT32 inExtend)
+MBOOL MGridDataManager::LoadGridDataByIndex(const MIntPoint& inCenterIndex, const MINT32 inExtend)
 {
 	MINT32 size = (inExtend * 2) + 1;
 	LoadGridDataLogic(inCenterIndex.X - inExtend, inCenterIndex.Y - inExtend, size, size);

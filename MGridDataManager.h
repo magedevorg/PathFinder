@@ -82,10 +82,10 @@ public:
 	MBOOL LoadMetaData();
 
 
-	virtual MBOOL LoadGridData(const MVector2& inCenterPos, const MINT32 inExtend);
+	virtual MBOOL LoadGridDataByPosition(const MVector2& inCenterPos, const MINT32 inExtend);
 
 	// 그리드 데이터를 로드
-	virtual MBOOL LoadGridData(const MIntPoint& inCenterIndex, const MINT32 inExtend);
+	virtual MBOOL LoadGridDataByIndex(const MIntPoint& inCenterIndex, const MINT32 inExtend);
 	
 	
 	// 메타 데이터를 얻는다
