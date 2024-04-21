@@ -6,19 +6,8 @@
 #include "MType.h"
 #include "MString.h"
 #include "MPool.h"
+#include "MStream.h"
 
-
-
-//--------------------------------------------------------------------
-// 타일 정보
-//--------------------------------------------------------------------
-class MTileData
-{
-public:	
-	MIntPoint TileIndex2D;
-
-	bool IsObstacle = false;
-};
 
 
 
@@ -27,6 +16,10 @@ public:
 //--------------------------------------------------------------------
 class MGridMetaData
 {
+public:
+	
+
+
 public:
 	//--------------------------------------------------------
 	// 타일 정보
@@ -38,7 +31,6 @@ public:
 	//--------------------------------------------------------
 	MINT32 GridSideTileCount;	// 그리드 가로 타일 개수
 
-	
 	// 그리드 한변 사이즈
 	MINT32 GetGridSideSize() const {
 		return TileSize * GridSideTileCount;
@@ -47,10 +39,32 @@ public:
 
 
 //--------------------------------------------------------------------
+// 타일 정보
+//--------------------------------------------------------------------
+class MTileData
+{
+public:
+	MIntPoint TileIndex2D;
+
+	bool IsObstacle = false;
+};
+
+
+
+//--------------------------------------------------------------------
 // 하나의 그리드 데이터
 //--------------------------------------------------------------------
-class MGridData
+class MGridData : public MSerializable
 {
+public:
+	// 직렬화/역직렬화
+	virtual void Serialize(class MStream& inStream) override;
+
+	// 타일 데이터를 얻는다
+	MTileData* GetTileData(MINT32 inIndex);
+	
+
+
 public:
 	// 인덱스
 	MIntPoint GridIndex2D;
@@ -59,8 +73,8 @@ public:
 	MVector2 LeftTop;
 	MVector2 RightBottom;
 
-	std::vector<MTileData> TileDataContainer;
-
+	// 타일 데이터
+	MMemory TileDataContainer;
 };
 
 
@@ -103,9 +117,16 @@ public:
 		return &LoadedGridDataContainer;
 	}
 
+
+	
+
+
 protected:
 	// 그리드데이터 로드 로직
 	void LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT32 inWidth, MINT32 inHeight);
+
+	// 신규 그리드 데이터를 추가
+	MGridData* AddNewGridDataFile(const MString& inFileName, const MIntPoint& inIndex2);
 
 
 	// 메타 파일 패스를 얻는다

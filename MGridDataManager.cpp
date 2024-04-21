@@ -9,6 +9,35 @@
 
 
 //--------------------------------------------------------------------
+// MGridData
+//--------------------------------------------------------------------
+void MGridData::Serialize(class MStream& inStream)
+{
+	inStream.Process(&GridIndex2D, sizeof(GridIndex2D));
+	inStream.Process(&LeftTop, sizeof(LeftTop));
+	inStream.Process(&RightBottom, sizeof(RightBottom));
+
+	TileDataContainer.Serialize(inStream);
+}
+
+
+MTileData* MGridData::GetTileData(MINT32 inIndex)
+{
+	const MINT32 pos = sizeof(MTileData) * inIndex;
+
+	const MINT32 size = TileDataContainer.GetSize();
+
+	if (pos >= size)
+	{
+		int cc = 4;
+		int dd = cc;
+	}
+
+	return (MTileData*)(TileDataContainer.GetPointer() + (sizeof(MTileData) * inIndex));
+}
+
+
+//--------------------------------------------------------------------
 // MGridDataManager
 //--------------------------------------------------------------------
 MGridDataManager::MGridDataManager(const MString& inDataPath)
@@ -116,7 +145,7 @@ void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT3
 
 
 	// 그리드 데이터용 메모리
-	MMemoryI<sizeof(MGridData)> readMemory;
+	MMemoryI<1000> readMemory;
 
 	// 루프를 돌면서 정보를 설정
 	for (MINT32 x = 0; x < inWidth; ++x)
@@ -135,52 +164,27 @@ void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT3
 				continue;
 			}
 
-
-			// 대상이 없는경우 파일에서 불러온다
+			// 대상이 없는경우 파일에서 로드
 			MString fileName = GetGridDataFilePath(index2);
 
-			// 이부분 벡터를 덮어 씌우기 때문에 위험한 코드 
-			// 우선 그냥 처리해분다
-			/* 
 			// 대상 파일을 로드해보고 존재한다면 그거사용
 			if ( MTRUE == MFileUtil::LoadFile(readMemory, fileName) )
 			{
 				// 풀에서 정보를 얻어오고 값을 카피
 				MGridData* gridData = GridDataPool.Pop();
-				readMemory.Read(gridData, 0, sizeof(MGridData));
-
+				
+				MMemoryReadStream readStream(readMemory);
+				gridData->Serialize(readStream);
+				
 				LoadedGridDataContainer.push_back(gridData);
 				continue;
 			}
-			*/
+			
 
 
 			if (MTRUE == IsCreateGridDataFile)
 			{
-				// 신규 파일을 생성	
-				MGridData* gridData = GridDataPool.Pop();
-				gridData->GridIndex2D = index2;
-
-				// 위치 정보
-				MINT32 GridSideSize = GridMetaData.GetGridSideSize();
-				gridData->LeftTop.X = GridSideSize * index2.X;
-				gridData->LeftTop.Y = GridSideSize * index2.Y;
-
-				gridData->TileDataContainer.clear();
-				gridData->TileDataContainer.resize(GridMetaData.GridSideTileCount * GridMetaData.GridSideTileCount);
-				for (int32 ty = 0; ty < GridMetaData.GridSideTileCount; ++ty)
-				{
-					for (int32 tx = 0; tx < GridMetaData.GridSideTileCount; ++tx)
-					{
-						int32 idx = ty * GridMetaData.GridSideTileCount + tx;
-						gridData->TileDataContainer[idx].TileIndex2D.Set(tx, ty);
-						gridData->TileDataContainer[idx].IsObstacle = false;
-					}
-				}
-
-				LoadedGridDataContainer.push_back(gridData);
-
-				MFileUtil::SaveToFile(gridData, sizeof(MGridData), fileName);
+				AddNewGridDataFile(fileName, index2);
 				continue;
 			}
 			
@@ -200,6 +204,51 @@ void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT3
 		GridDataPool.Push(pair.second);
 	}
 }
+
+
+MGridData* MGridDataManager::AddNewGridDataFile(const MString& inFileName, const MIntPoint& inIndex2)
+{
+	// 신규 파일을 생성	
+	MGridData* gridData = GridDataPool.Pop();
+	gridData->GridIndex2D = inIndex2;
+
+	// 위치 정보
+	MINT32 GridSideSize = GridMetaData.GetGridSideSize();
+	gridData->LeftTop.Set(GridSideSize * inIndex2.X, GridSideSize * inIndex2.Y);
+	gridData->RightBottom.Set(gridData->LeftTop.X + GridSideSize, gridData->LeftTop.Y + GridSideSize);
+
+	// 타일 정보 할당
+	gridData->TileDataContainer.Alloc(GridMetaData.GridSideTileCount * GridMetaData.GridSideTileCount * sizeof(MTileData));
+
+
+	for (int32 x = 0; x < GridMetaData.GridSideTileCount; ++x)
+	{
+		for (int32 y = 0; y < GridMetaData.GridSideTileCount; ++y)
+		{
+			int32 idx = y * GridMetaData.GridSideTileCount + x;
+
+			MTileData* tileData = gridData->GetTileData(idx);
+
+			tileData->TileIndex2D.Set(x, y);
+			tileData->IsObstacle = false;
+		}
+	}
+
+	// 등록
+	LoadedGridDataContainer.push_back(gridData);
+
+	// 데이터를 저장
+	MMemoryI<1000> tempMemory;
+	{
+		MMemoryWriteStream writeStream(tempMemory);
+		gridData->Serialize(writeStream);
+	}
+	
+	MFileUtil::SaveToFile(tempMemory.GetPointer(), tempMemory.GetSize(), inFileName);
+
+	return gridData;
+}
+
 
 MString MGridDataManager::GetMetaFilePath() const
 {
@@ -250,13 +299,15 @@ void MGridDataEditManager::UpdateLoadedGridData(std::vector<class MBoxCollider*>
 		if (nullptr == gridData) {
 			continue;
 		}
-
-		for (MTileData& tileData : gridData->TileDataContainer)
+		
+		const MINT32 tileCount = GridMetaData.GridSideTileCount * GridMetaData.GridSideTileCount;
+		for ( MINT32 i=0;i<tileCount;++i)
 		{
-			tileData.IsObstacle = false;
+			MTileData* tileData = gridData->GetTileData(i);
+			tileData->IsObstacle = false;
 
 			MTransform tileTransform;
-			tileTransform.Position = GetTileCenterPosition(gridData, &tileData);
+			tileTransform.Position = GetTileCenterPosition(gridData, tileData);
 			
 			MBoxCollider tileBoxCollider(tileTransform, MVector3(GridMetaData.TileSize, GridMetaData.TileSize, 100));
 
@@ -265,7 +316,7 @@ void MGridDataEditManager::UpdateLoadedGridData(std::vector<class MBoxCollider*>
 				// 충돌하는 박스
 				if (true == MCollision::CheckOBB(tileBoxCollider, *collider))
 				{
-					tileData.IsObstacle = true;
+					tileData->IsObstacle = true;
 					break;
 				}
 			}	
