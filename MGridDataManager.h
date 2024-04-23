@@ -189,7 +189,7 @@ public:
 	void SaveMetaData();
 
 	// 그리드 데이터 저장
-	void SaveGridData();
+	void SaveGridData(MGridData* inGridData);
 
 
 protected:

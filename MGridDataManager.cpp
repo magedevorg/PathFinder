@@ -237,15 +237,6 @@ MGridData* MGridDataManager::AddNewGridDataFile(const MString& inFileName, const
 	// 등록
 	LoadedGridDataContainer.push_back(gridData);
 
-	// 데이터를 저장
-	MMemoryI<1000> tempMemory;
-	{
-		MMemoryWriteStream writeStream(tempMemory);
-		gridData->Serialize(writeStream);
-	}
-	
-	MFileUtil::SaveToFile(tempMemory.GetPointer(), tempMemory.GetSize(), inFileName);
-
 	return gridData;
 }
 
@@ -321,6 +312,9 @@ void MGridDataEditManager::UpdateLoadedGridData(std::vector<class MBoxCollider*>
 				}
 			}	
 		}
+
+		// 파일 저장
+		SaveGridData(gridData);
 	}
 }
 
@@ -331,9 +325,20 @@ void MGridDataEditManager::SaveMetaData()
 
 }
 
-void MGridDataEditManager::SaveGridData()
+void MGridDataEditManager::SaveGridData(MGridData* inGridData)
 {
+	// 데이터를 저장
+	MMemoryI<1000> tempMemory;
+	{
+		MMemoryWriteStream writeStream(tempMemory);
+		inGridData->Serialize(writeStream);
+	}
 
+
+	MString fileName = GetGridDataFilePath(inGridData->GridIndex2D);
+
+
+	MFileUtil::SaveToFile(tempMemory.GetPointer(), tempMemory.GetSize(), fileName);
 }
 
 MVector3 MGridDataEditManager::GetTileCenterPosition(MGridData* inGridData, MTileData* inTileData)
