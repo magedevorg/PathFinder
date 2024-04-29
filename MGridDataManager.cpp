@@ -40,9 +40,8 @@ MTileData* MGridData::GetTileData(MINT32 inIndex)
 //--------------------------------------------------------------------
 // MGridDataManager
 //--------------------------------------------------------------------
-MGridDataManager::MGridDataManager(const MString& inDataPath)
-	: GridDataPath(inDataPath)
-	, IsCreateGridDataFile(false)
+MGridDataManager::MGridDataManager()
+	:IsCreateGridDataFile(false)
 {
 	GridDataPool.InitPool(MFALSE, 9, MTRUE, []()->MGridData*
 		{
@@ -57,6 +56,12 @@ MGridDataManager::~MGridDataManager()
 	for (MINT32 i = 0; i < count; ++i) {
 		GridDataPool.Push(LoadedGridDataContainer[i]);
 	}
+}
+
+MBOOL MGridDataManager::InitGridDataManager(const MString& inDataPath)
+{
+	GridDataPath = inDataPath;
+	return MTRUE;
 }
 
 
@@ -118,6 +123,59 @@ MBOOL MGridDataManager::LoadGridDataByIndex(const MIntPoint& inCenterIndex, cons
 	return MTRUE;
 }
 
+MBOOL MGridDataManager::GetIndex2DByPosition(MIntPoint& inIndex2D, const MVector2& inPos)
+{
+	// 위치를 얻는다
+	if (0 == LoadedGridCount) {
+		return MFALSE;
+	}
+
+	MVector2 relativePos = LoaedGridLeftTopPos - inPos;
+	if (relativePos.X < 0 || relativePos.Y < 0) {
+		return MFALSE;
+	}
+
+	inIndex2D.X = (MINT32)(relativePos.X / GridMetaData.TileSize);
+	inIndex2D.Y = (MINT32)(relativePos.Y / GridMetaData.TileSize);
+
+	return MTRUE;
+}
+
+
+MTileData* MGridDataManager::GetTileDataByIndex2D(const MIntPoint& inIndex2D)
+{
+	MINT32 gridX = inIndex2D.X / GridMetaData.GridSideTileCount;
+	MINT32 gridY = inIndex2D.Y / GridMetaData.GridSideTileCount;
+
+	MINT32 gridIndex = (gridY * LoadedSize.Width) + gridX;
+
+	if (LoadedGridDataContainer.size() <= gridIndex) {
+		return nullptr;
+	}
+
+	MGridData* gridData = LoadedGridDataContainer[gridIndex];
+	if (nullptr == gridData) {
+		return nullptr;
+	}
+
+	MINT32 tileX = inIndex2D.X % GridMetaData.GridSideTileCount;
+	MINT32 tileY = inIndex2D.X % GridMetaData.GridSideTileCount;
+
+	MINT32 tileIndex = (tileY * GridMetaData.GridSideTileCount) + tileX;
+	
+	return gridData->GetTileData(tileIndex);
+}
+
+
+
+MBOOL MGridDataManager::GetTileLeftTopPositionByIndex(MVector2& inPos, const MIntPoint& inIndex2D)
+{
+	inPos.X = LoaedGridLeftTopPos.X + (GridMetaData.TileSize * inIndex2D.X);
+	inPos.Y = LoaedGridLeftTopPos.Y + (GridMetaData.TileSize * inIndex2D.Y);
+
+	return MTRUE;
+}
+
 
 void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT32 inWidth, MINT32 inHeight)
 {
@@ -147,6 +205,10 @@ void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT3
 	// 그리드 데이터용 메모리
 	MMemoryI<1000> readMemory;
 
+	// 최초 그리드 플래그
+	// 이게 설정되면 lefttop을 그냥 설정
+	LoadedGridCount = 0;
+
 	// 루프를 돌면서 정보를 설정
 	for (MINT32 x = 0; x < inWidth; ++x)
 	{
@@ -154,42 +216,62 @@ void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT3
 		{
 			MIntPoint index2(inStartX + x, inStartY + y);
 			
-			
-			// 백업정보에 있는지 체크하고 있다면 그거 사용
-			auto findIter = backupMap.find(index2);
-			if (findIter != backupMap.end())
+			// 대상 그리드 데이터를 얻는다
+			MGridData* gridData = nullptr;
 			{
-				LoadedGridDataContainer.push_back(findIter->second);
-				backupMap.erase(findIter);
-				continue;
+				// 백업정보에 있는지 체크하고 있다면 그거 사용
+				auto findIter = backupMap.find(index2);
+				if (findIter == backupMap.end())
+				{
+					// 백업 정보에 없는경우 파일에서 로드
+					MString fileName = GetGridDataFilePath(index2);
+
+					// 대상 파일을 로드해보고 존재한다면 그거사용
+					if (MTRUE == MFileUtil::LoadFile(readMemory, fileName))
+					{
+						// 풀에서 정보를 얻어오고 값을 카피
+						gridData = GridDataPool.Pop();
+
+						MMemoryReadStream readStream(readMemory);
+						gridData->Serialize(readStream);
+					}
+					else
+					{
+						// 대상 파일이 없는경우
+						if (MTRUE == IsCreateGridDataFile)
+						{
+							AddNewGridDataFile(fileName, index2);
+							continue;
+						}
+					}
+				}
+				else
+				{
+					// 백업 정보에 있는경우
+					gridData = findIter->second;
+					backupMap.erase(findIter);
+				}
 			}
 
-			// 대상이 없는경우 파일에서 로드
-			MString fileName = GetGridDataFilePath(index2);
+			// 넘어온 정보를 설정(nullptr 포함)
+			LoadedGridDataContainer.push_back(gridData);
+		
+			// 그리드 정보가 있는경우 lefttop을 설정
+			if(nullptr != gridData)
+			{ 
+				if (0 == LoadedGridCount)
+				{
+					LoaedGridLeftTopPos = gridData->LeftTop;
+				}
+				else
+				{
+					// 최초 설정이 아닌경우 비교
+					LoaedGridLeftTopPos.X = MMath::Min(LoaedGridLeftTopPos.X, gridData->LeftTop.X);
+					LoaedGridLeftTopPos.Y = MMath::Min(LoaedGridLeftTopPos.Y, gridData->LeftTop.Y);
+				}
 
-			// 대상 파일을 로드해보고 존재한다면 그거사용
-			if ( MTRUE == MFileUtil::LoadFile(readMemory, fileName) )
-			{
-				// 풀에서 정보를 얻어오고 값을 카피
-				MGridData* gridData = GridDataPool.Pop();
-				
-				MMemoryReadStream readStream(readMemory);
-				gridData->Serialize(readStream);
-				
-				LoadedGridDataContainer.push_back(gridData);
-				continue;
+				++LoadedGridCount;
 			}
-			
-
-
-			if (MTRUE == IsCreateGridDataFile)
-			{
-				AddNewGridDataFile(fileName, index2);
-				continue;
-			}
-			
-			// 이것도 저것도 아니면 nullptr 추가
-			LoadedGridDataContainer.push_back(nullptr);
 		}
 	}
 
@@ -259,11 +341,13 @@ MString MGridDataManager::GetGridDataFilePath(const MIntPoint& inIndex2) const
 //--------------------------------------------------------------------
 // MGridDataEditManager
 //--------------------------------------------------------------------
-MGridDataEditManager::MGridDataEditManager(const MString& inDataPath)
-	: MGridDataManager(inDataPath)
+MGridDataEditManager::MGridDataEditManager()
+	: MGridDataManager()
 {
 	IsCreateGridDataFile = true;
 }
+
+
 
 MBOOL MGridDataEditManager::ResetMetaData(const MGridMetaData& inMetaData)
 {

@@ -86,10 +86,13 @@ public:
 class MGridDataManager
 {
 public:
-	MGridDataManager(const MString& inDataPath);
+	MGridDataManager();
 	virtual ~MGridDataManager();
 
 public:
+	// 그리드 데이터 매니저 초기화
+	virtual MBOOL InitGridDataManager(const MString& inDataPath);
+
 	//-------------------------------------------------------
 	// 데이터 로드
 	//-------------------------------------------------------
@@ -101,7 +104,15 @@ public:
 
 	// 그리드 데이터를 로드
 	virtual MBOOL LoadGridDataByIndex(const MIntPoint& inCenterIndex, const MINT32 inExtend);
+
+	// 위치로 인덱스를 얻는다
+	MBOOL GetIndex2DByPosition(MIntPoint& inIndex2D, const MVector2& inPos);
 	
+	// 타일 데이터를 얻는다
+	MTileData* GetTileDataByIndex2D(const MIntPoint& inIndex2D);
+
+	// 
+	MBOOL GetTileLeftTopPositionByIndex(MVector2& inPos, const MIntPoint& inIndex2D);
 	
 	// 메타 데이터를 얻는다
 	MGridMetaData* GetGridMetaData() {
@@ -118,7 +129,9 @@ public:
 	}
 
 
-	
+	const MVector2& GetLoaedGridLeftTopPos() const {
+		return LoaedGridLeftTopPos;
+	}
 
 
 protected:
@@ -152,6 +165,12 @@ protected:
 	// 로드된 사이즈
 	MIntSize LoadedSize;
 
+	// 로드된 그리드의 왼쪽위 위치
+	MVector2 LoaedGridLeftTopPos;
+
+	// 로드된 그리드 개수
+	MINT32 LoadedGridCount = 0;
+
 	// 로드된 그리드 데이터
 	std::vector<MGridData*> LoadedGridDataContainer;
 
@@ -171,9 +190,10 @@ protected:
 class MGridDataEditManager : public MGridDataManager
 {
 public:
-	MGridDataEditManager(const MString& inDataPath);
+	MGridDataEditManager();
 
 public:
+
 	// 메타 데이터 재설정
 	MBOOL ResetMetaData(const MGridMetaData& inMetaData);
 
