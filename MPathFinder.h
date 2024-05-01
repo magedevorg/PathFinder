@@ -83,12 +83,15 @@ public:
 	// 위치로 그리드 데이터를 로드
 	MBOOL LoadGridDataByPosition(const MVector2& inCenterPos, const MINT32 inExtend);
 
-
-	
 	//-------------------------------------------------------------------
 	// 경로를 찾는다
 	//-------------------------------------------------------------------
 	MBOOL FindPath(std::vector<MVector2>& inList, const MVector2& inStartPos, const MVector2& inEndPos);
+
+
+	class MGridDataManager* GetGridDataManager() {
+		return GridDataManager;
+	}
 	
 protected:
 	// 
