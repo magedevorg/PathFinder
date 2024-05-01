@@ -130,7 +130,7 @@ MBOOL MGridDataManager::GetIndex2DByPosition(MIntPoint& inIndex2D, const MVector
 		return MFALSE;
 	}
 
-	MVector2 relativePos = LoaedGridLeftTopPos - inPos;
+	MVector2 relativePos = inPos - LoaedGridLeftTopPos;
 	if (relativePos.X < 0 || relativePos.Y < 0) {
 		return MFALSE;
 	}
@@ -159,7 +159,7 @@ MTileData* MGridDataManager::GetTileDataByIndex2D(const MIntPoint& inIndex2D)
 	}
 
 	MINT32 tileX = inIndex2D.X % GridMetaData.GridSideTileCount;
-	MINT32 tileY = inIndex2D.X % GridMetaData.GridSideTileCount;
+	MINT32 tileY = inIndex2D.Y % GridMetaData.GridSideTileCount;
 
 	MINT32 tileIndex = (tileY * GridMetaData.GridSideTileCount) + tileX;
 	

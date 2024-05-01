@@ -50,6 +50,10 @@ public:
 		return IsClose;
 	}
 
+	MPathFindNode* GetPrevNode() {
+		return PrevNode;
+	}
+
 protected:
 	// ¿Œµ¶Ω∫ ¡§∫∏
 	MIntPoint Index2D;

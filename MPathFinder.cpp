@@ -33,6 +33,11 @@ MPathFinder::MPathFinder()
 {
 	// 그리드 데이터 매니저 생성
 	GridDataManager = new MGridDataManager();
+
+	NodePool.InitPool(false, 10, MTRUE, []()->MPathFindNode*
+		{
+			return new MPathFindNode();
+		});
 }
 
 
@@ -128,7 +133,7 @@ MBOOL MPathFinder::FindPath(std::vector<MVector2>& inList, const MVector2& inSta
 		positionList[count - 1] = inEndPos;
 	}
 
-
+	
 	// OBB 체크
 	// 마지막 인덱스
 	const MINT32 lastIndex = positionList.size() - 1;
@@ -159,7 +164,6 @@ MBOOL MPathFinder::FindPath(std::vector<MVector2>& inList, const MVector2& inSta
 		}
 	}
 
-	
 	return MTRUE;
 }
 
@@ -211,7 +215,35 @@ MBOOL MPathFinder::FindGridIndexPath(std::vector<MIntPoint>& inList, const MIntP
 		UpdateAroundNode(checkNode, inEnd);
 	}
 
+	// 결과 위치에서 역추적한다
+	{
+		auto findIter = UsedNodeMap.find(inEnd);
+		if (UsedNodeMap.end() != findIter)
+		{
+			MPathFindNode* currentNode = findIter->second;
+			while (nullptr != currentNode)
+			{
+				inList.push_back(currentNode->GetIndex2D());
+				currentNode = currentNode->GetPrevNode();
+			}
+		}
+
+		// 역순으로 변경
+		std::reverse(inList.begin(), inList.end());
+	}
 	
+	// 반납
+	{
+		// 사용했던 노드는 풀에 반납
+		for (auto pair : UsedNodeMap) {
+			NodePool.Push(pair.second);
+		}
+
+		UsedNodeMap.clear();
+
+		// 데이터 셋 제거
+		OpenNodeSet.clear();
+	}
 
 	return MTRUE;
 }
