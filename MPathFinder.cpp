@@ -373,7 +373,7 @@ void MPathFinder::UpdateAroundNode(MPathFindNode* inBaseNode, const MIntPoint& i
 
 MBOOL MPathFinder::CheckBlockLine(const MVector2& inStart, const MVector2& inEnd, MFLOAT inRadius)
 {
-	MRect rect1;
+	MRectCollider rect1;
 	{
 		MVector2 leftVec;
 		{
@@ -428,7 +428,7 @@ MBOOL MPathFinder::CheckBlockLine(const MVector2& inStart, const MVector2& inEnd
 			MVector2 leftTop;
 			GridDataManager->GetTileLeftTopPositionByIndex(leftTop, targetPos);
 
-			MRect rect2;
+			MRectCollider rect2;
 			rect2.Set(leftTop, leftTop + MVector2(tileSize, 0), leftTop + MVector2(0, tileSize), leftTop + MVector2(tileSize, tileSize));
 
 			if (MTRUE == MCollision::CheckOBB(rect1, rect2))
