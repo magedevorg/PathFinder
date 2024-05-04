@@ -2,6 +2,8 @@
 #include "MFileUtil.h"
 #include "MTransform.h"
 #include "MCollision.h"
+#include "MMath.h"
+#include "MBoxCollider.h"
 
 
 #define GRID_META_FILE_NAME			MSTR("GridMetaData.dat")
@@ -99,7 +101,7 @@ MBOOL MGridDataManager::LoadGridDataByPosition(const MVector2& inCenterPos, cons
 	// 위치 -> 인덱스 변경 람다
 	auto ConvertIndexFunc = [gridSideSize](MFLOAT inValue)->MINT32
 		{
-			int32 index = inValue / gridSideSize;
+			MINT32 index = inValue / gridSideSize;
 			if (inValue < 0) {
 				index -= 1;
 			}
@@ -109,8 +111,8 @@ MBOOL MGridDataManager::LoadGridDataByPosition(const MVector2& inCenterPos, cons
 
 
 	// 센터의 인덱스를 얻는다
-	const int32 indexX = ConvertIndexFunc(inCenterPos.X);
-	const int32 indexY = ConvertIndexFunc(inCenterPos.Y);
+	const MINT32 indexX = ConvertIndexFunc(inCenterPos.X);
+	const MINT32 indexY = ConvertIndexFunc(inCenterPos.Y);
 	
 	return LoadGridDataByIndex(MIntPoint(indexX, indexY), inExtend);
 }
@@ -303,11 +305,11 @@ MGridData* MGridDataManager::AddNewGridDataFile(const MString& inFileName, const
 	gridData->TileDataContainer.Alloc(GridMetaData.GridSideTileCount * GridMetaData.GridSideTileCount * sizeof(MTileData));
 
 
-	for (int32 x = 0; x < GridMetaData.GridSideTileCount; ++x)
+	for (MINT32 x = 0; x < GridMetaData.GridSideTileCount; ++x)
 	{
-		for (int32 y = 0; y < GridMetaData.GridSideTileCount; ++y)
+		for (MINT32 y = 0; y < GridMetaData.GridSideTileCount; ++y)
 		{
-			int32 idx = y * GridMetaData.GridSideTileCount + x;
+			MINT32 idx = y * GridMetaData.GridSideTileCount + x;
 
 			MTileData* tileData = gridData->GetTileData(idx);
 

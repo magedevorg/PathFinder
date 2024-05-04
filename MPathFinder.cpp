@@ -2,8 +2,10 @@
 #include "MGridDataManager.h"
 
 #include "MBoxCollider.h"
+#include "MMath.h"
 
-
+#include "MRectCollider.h"
+#include "MCollision.h"
 
 
 //---------------------------------------------------------------------
@@ -110,7 +112,7 @@ MBOOL MPathFinder::FindPath(std::vector<MVector2>& inList, const MVector2& inSta
 		return MFALSE;
 	}
 
-	const int32 count = index2DList.size();
+	const MINT32 count = index2DList.size();
 	std::vector<MVector2> positionList;
 	positionList.resize(count);
 
