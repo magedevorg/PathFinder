@@ -122,6 +122,14 @@ MBOOL MGridDataManager::LoadGridDataByIndex(const MIntPoint& inCenterIndex, cons
 {
 	MINT32 size = (inExtend * 2) + 1;
 	LoadGridDataLogic(inCenterIndex.X - inExtend, inCenterIndex.Y - inExtend, size, size);
+
+
+	MINT32 gridSideSize = GridMetaData.GetGridSideSize();
+	// 왼쪽 위 위치를 얻는다(대상 그리드가 있거나 없거나 상관없이)
+	LoaedGridLeftTopPos.X = (inCenterIndex.X * gridSideSize) - (inExtend * gridSideSize);
+	LoaedGridLeftTopPos.Y = (inCenterIndex.Y * gridSideSize) - (inExtend * gridSideSize);
+
+
 	return MTRUE;
 }
 
@@ -257,23 +265,7 @@ void MGridDataManager::LoadGridDataLogic(MINT32 inStartX, MINT32 inStartY, MINT3
 
 			// 넘어온 정보를 설정(nullptr 포함)
 			LoadedGridDataContainer.push_back(gridData);
-		
-			// 그리드 정보가 있는경우 lefttop을 설정
-			if(nullptr != gridData)
-			{ 
-				if (0 == LoadedGridCount)
-				{
-					LoaedGridLeftTopPos = gridData->LeftTop;
-				}
-				else
-				{
-					// 최초 설정이 아닌경우 비교
-					LoaedGridLeftTopPos.X = MMath::Min(LoaedGridLeftTopPos.X, gridData->LeftTop.X);
-					LoaedGridLeftTopPos.Y = MMath::Min(LoaedGridLeftTopPos.Y, gridData->LeftTop.Y);
-				}
-
-				++LoadedGridCount;
-			}
+			++LoadedGridCount;
 		}
 	}
 
